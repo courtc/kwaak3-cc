@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+
+
+<Button android:id="@+id/btnStartGame" android:text="Start game" android:layout_height="wrap_content" android:layout_width="fill_parent" android:typeface="normal"></Button><Button android:layout_height="wrap_content" android:layout_width="fill_parent" android:text="Run benchmark" android:id="@+id/btnRunBenchmark"></Button><Button android:layout_height="wrap_content" android:layout_width="fill_parent" android:typeface="normal" android:text="Visit website" android:id="@+id/btnVisitWebsite"></Button>GL_OES_draw_texture
+
+
+
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_height="wrap_content" android:layout_width="fill_parent" android:orientation="horizontal"><CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/chkEnableSound" android:text="Enable sound" android:checked="true"></CheckBox><CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Enable lightmaps" android:id="@+id/chkEnableLightmaps"></CheckBox>
+<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/chkShowFramerate" android:text="Show framerate"></CheckBox>
+</LinearLayout><TextView android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kwaak3 v1.1c test build"></TextView>
+
+
+
+
+</LinearLayout>

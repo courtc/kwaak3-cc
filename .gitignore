@@ -1,0 +1,9 @@
+*.o
+*.keystore
+kwaak/project/local.properties
+cscope.out
+kwaak/project/.classpath
+kwaak/project/.project
+kwaak/project/obj
+kwaak/project/libs/armeabi/*.so
+ioquake3/build

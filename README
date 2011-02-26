@@ -1,0 +1,18 @@
+To buildz:
+
+SRC:
+    (tld)$ cd ioquake
+    (ioquake)$ make ANDROID_NDK_DIR=<path-to-ndk>
+    (ioquake)$ cp build/release-linux-arm/libquake3.so ../kwaak/project/libs/armeabi/libquake3_neon.so
+    (ioquake)$ cp build/release-linux-arm/baseq3/*.so ../kwaak/project/libs/armeabi/
+
+JNI:
+    (ndk)$ ./ndk-build -C <path-to>/kwaak/ NDK_PROJECT_PATH=<path-to>/kwaak/project/
+
+SDK one-time setup:
+    (sdk)$ tools/android update project --path <path-to>/kwaak/project/ --target android-11 # one-time
+
+JAVA:
+    (tld)$ cd kwaak/project
+    (project)$ ant release
+    (project)$ jarsigner -keystore <your-keystore> bin/*.apk <your-key-alias>
