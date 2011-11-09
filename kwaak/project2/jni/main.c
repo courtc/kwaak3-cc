@@ -235,6 +235,11 @@
 #define QK_UNDO				339
 #define QK_CONSOLE			340
 
+int simple_audio_init(void *buffer, int size, void (*idle)(void));
+void simple_audio_fini(void);
+int simple_audio_write(int offset, int length);
+int simple_audio_position(void);
+
 /* Function pointers to Quake3 code */
 int  (*q3main)(int argc, char **argv);
 void (*drawFrame)();
@@ -347,45 +352,18 @@ static void load_libquake3()
 
 int GetPos()
 {
-    /*JNIEnv *env;
-    (*jVM)->GetEnv(jVM, (void**) &env, JNI_VERSION_1_4);
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "getPos");
-#endif
-    return (*env)->CallIntMethod(env, kwaakAudioObj, android_getPos);
-	*/
-	return 0;
+	return simple_audio_position();
 }
 
 void InitAudio(void *buffer, int size)
 {
-/*
-    JNIEnv *env;
-    jobject tmp;
-    (*jVM)->GetEnv(jVM, (void**) &env, JNI_VERSION_1_4);
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "initAudio");
-#endif
-    tmp = (*env)->NewDirectByteBuffer(env, buffer, size);
-    audioBuffer = (jobject)(*env)->NewGlobalRef(env, tmp);
-
-    if(!audioBuffer) __android_log_print(ANDROID_LOG_ERROR, "Quake_JNI", "yikes, unable to initialize audio buffer");
-
-    return (*env)->CallVoidMethod(env, kwaakAudioObj, android_initAudio);
-	*/
+	simple_audio_init(buffer, size, requestAudioData);
 }
 
 void WriteAudio(int offset, int length)
 {
-/*
-    JNIEnv *env;
-    (*jVM)->GetEnv(jVM, (void**) &env, JNI_VERSION_1_4);
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "writeAudio audioBuffer=%p offset=%d length=%d", audioBuffer, offset, length);
-#endif
+	simple_audio_write(offset, length);
 
-    (*env)->CallVoidMethod(env, kwaakAudioObj, android_writeAudio, audioBuffer, offset, length);
-	*/
 }
 
 void OnLoad()
@@ -502,11 +480,6 @@ void QueueJoystickEvent(jint nAxis, jint nValue)
     __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "queueJoystickEvent(%d, %d)", nAxis, nValue);
 #endif
     if(queueJoystickEvent) queueJoystickEvent(nAxis, nValue);
-}
-
-void RequestAudioData()
-{
-    if(requestAudioData) requestAudioData();
 }
 
 void SetLibraryDirectory(const char* szPath)
