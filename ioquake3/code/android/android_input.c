@@ -82,6 +82,11 @@ enum Action
     ACTION_MOVE=2
 };
 
+void queueJoystickEvent(int axis, int value)
+{
+    int t = Sys_Milliseconds();
+    Com_QueueEvent(t, SE_JOYSTICK_AXIS, axis, value, 0, NULL);
+}
 
 void queueMotionEvent(int action, float x, float y, float pressure)
 {
