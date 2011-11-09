@@ -71,8 +71,10 @@ int simple_audio_init(void *buffer, int size, void (*idle)(void))
 
 	rc = audio_engine_create(&simple_audio);
 
-	if (simple_audio_idle)
+	if (simple_audio_idle) {
 		(* simple_audio_idle)();
+		(* simple_audio_idle)();
+	}
 	return rc;
 }
 
