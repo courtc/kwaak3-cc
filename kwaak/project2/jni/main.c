@@ -568,7 +568,8 @@ static int engine_init_display(struct engine* engine)
             EGL_BLUE_SIZE, 8,
             EGL_GREEN_SIZE, 8,
             EGL_RED_SIZE, 8,
-            EGL_NONE
+    		EGL_DEPTH_SIZE, 8,
+    		EGL_NONE
     };
     EGLint w, h, dummy, format;
     EGLint numConfigs;
