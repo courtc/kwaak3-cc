@@ -30,7 +30,6 @@ import android.view.Window;
 import android.view.WindowManager;
 
 public class Game extends Activity {
-	private KwaakAudio mKwaakAudio;
 	private KwaakView mGLSurfaceView;
 
 	private void showError(String s)
@@ -92,13 +91,6 @@ public class Game extends Activity {
 			mGLSurfaceView.requestFocus();
 			mGLSurfaceView.setId(1);
 
-			/* The KwaakAudio object is owned by the Game class but is only used
-			 * by the game library using JNI calls. It is not that pretty but it
-			 * is the only way without using the (unstable) AudioTrack API from C++.
-			 */
-			mKwaakAudio = new KwaakAudio();
-			KwaakJNI.setAudio(mKwaakAudio);
-
 			Bundle extras = getIntent().getExtras();
 			if(extras != null)
 			{
@@ -134,9 +126,6 @@ public class Game extends Activity {
 	protected void onPause() {
 		//Log.d("Quake_JAVA", "onPause");
 		super.onPause();
-
-		if(mKwaakAudio != null)
-			mKwaakAudio.pause();
 	}
 
 	@Override
@@ -151,8 +140,5 @@ public class Game extends Activity {
 		{
 			mGLSurfaceView.onResume();
 		}
-
-		if(mKwaakAudio != null)
-			mKwaakAudio.resume();
 	}
 }

@@ -16,8 +16,8 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_LDLIBS    := -ldl -llog
+LOCAL_LDLIBS    := -ldl -llog -lOpenSLES
 LOCAL_MODULE    := kwaakjni
-LOCAL_SRC_FILES := kwaakjni.c
+LOCAL_SRC_FILES := kwaakjni.c audio.c
 
 include $(BUILD_SHARED_LIBRARY)
