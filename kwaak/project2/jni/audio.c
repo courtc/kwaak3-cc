@@ -39,6 +39,7 @@ struct audio_buffer {
 	int isPlaying;
 	short *data;
 	int length;
+	void (* done)(struct audio_buffer *);
 
 	struct audio_buffer *next;
 };
@@ -48,9 +49,10 @@ struct audio_engine {
 	SLEngineItf engine;
 	struct audio_mixer mixer;
 	struct audio_buffer *buffer;
+	void (* done)(struct audio_buffer *);
 };
 
-int audio_engine_create(struct audio_engine *e);
+int audio_engine_create(struct audio_engine *e, void (* done)(struct audio_buffer *));
 void audio_engine_destroy(struct audio_engine *e);
 
 int audio_engine_queue(struct audio_engine *e, const short *data, int length);
@@ -63,13 +65,19 @@ static struct audio_engine simple_audio;
 static void *simple_audio_buffer;
 static void (*simple_audio_idle)(void);
 
+static void simple_audio_done(struct audio_buffer *b)
+{
+	if (simple_audio_idle)
+		(* simple_audio_idle)();
+}
+
 int simple_audio_init(void *buffer, int size, void (*idle)(void))
 {
 	int rc;
 	simple_audio_buffer = buffer;
 	simple_audio_idle = idle;
 
-	rc = audio_engine_create(&simple_audio);
+	rc = audio_engine_create(&simple_audio, simple_audio_done);
 
 	if (simple_audio_idle) {
 		(* simple_audio_idle)();
@@ -104,12 +112,12 @@ static void buffer_finished(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct audio_buffer *b = (struct audio_buffer *)context;
 
-	if (simple_audio_idle)
-		(* simple_audio_idle)();
+	if (b->done)
+		(* b->done)(b);
 	b->isPlaying = 0;
 }
 
-int audio_engine_create(struct audio_engine *e)
+int audio_engine_create(struct audio_engine *e, void (* done)(struct audio_buffer *))
 {
 	SLresult result;
 
@@ -150,6 +158,7 @@ int audio_engine_create(struct audio_engine *e)
 		result = (*e->mixer.reverb)->SetEnvironmentalReverbProperties
 				(e->mixer.reverb, &reverbSettings);
 	}
+	e->done = done;
 
 	return 0;
 }
@@ -263,6 +272,7 @@ int audio_buffer_create(struct audio_engine *e, struct audio_buffer **b)
 	if (b != NULL)
 		*b = ret;
 
+	ret->done = e->done;
 	ret->next = e->buffer;
 	e->buffer = ret;
 
