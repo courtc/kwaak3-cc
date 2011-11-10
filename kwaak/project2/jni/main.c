@@ -1,10 +1,8 @@
-//BEGIN_INCLUDE(all)
-#include <jni.h>
 #include <errno.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>
-#include <android/log.h>
+#include <stdlib.h>
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
@@ -13,8 +11,16 @@
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "Quake", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "Quake", __VA_ARGS__))
+#define LOG_TAG "Kwaak3"
+
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__))
+#ifdef DEBUG
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
+#else
+#define LOGD(...)
+#endif
 
 #define QK_TAB				9
 #define QK_ENTER			13
@@ -263,12 +269,10 @@ void (*setResolution)(int width, int height);
 /* Containts the path to /data/data/(package_name)/libs */
 static char* lib_dir=NULL;
 
-static jboolean audioEnabled=1;
-static jboolean benchmarkEnabled=0;
-static jboolean lightmapsEnabled=0;
-static jboolean showFramerateEnabled=0;
-static jobject audioBuffer=0;
-static jobject kwaakAudioObj=0;
+static int audioEnabled=1;
+static int benchmarkEnabled=0;
+static int lightmapsEnabled=0;
+static int showFramerateEnabled=0;
 static void *libdl;
 static int init=0;
 
@@ -282,7 +286,7 @@ static BOOL neon_support()
     FILE *fp = fopen("/proc/cpuinfo", "r");
     if(!fp)
     {
-        __android_log_print(ANDROID_LOG_DEBUG, "Quake", "Unable to open /proc/cpuinfo\n");
+        LOGD("Unable to open /proc/cpuinfo\n");
         return FALSE;
     }
 
@@ -326,7 +330,7 @@ void get_quake3_library_path(char *path)
     }
     else
     {
-        __android_log_print(ANDROID_LOG_ERROR, "Quake_JNI", "Library path not set, trying /data/data/org.kwaak3/lib");
+        LOGE("Library path not set, trying /data/data/org.kwaak3/lib");
         sprintf(path, "/data/data/org.kwaak3/lib/%s", libquake3);
     }
 }
@@ -336,14 +340,12 @@ static void load_libquake3()
     char libquake3_path[80];
     get_quake3_library_path(libquake3_path);
 
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake", "Attempting to load %s\n", libquake3_path);
-#endif
+    LOGD("Attempting to load %s\n", libquake3_path);
 
     libdl = dlopen(libquake3_path, RTLD_NOW);
     if(!libdl)
     {
-        __android_log_print(ANDROID_LOG_ERROR, "Quake", "Unable to load libquake3.so: %s\n", dlerror());
+        LOGE("Unable to load libquake3.so: %s\n", dlerror());
         return;
     }
 
@@ -377,34 +379,26 @@ void WriteAudio(int offset, int length)
 
 void OnLoad()
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-#endif
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "JNI_OnLoad called");
+    LOGD("JNI_OnLoad called");
     if(!init) load_libquake3();
 }
 
-void EnableAudio(jboolean enable)
+void EnableAudio(int enable)
 {
     audioEnabled = enable;
 }
 
-void EnableBenchmark(jboolean enable)
+void EnableBenchmark(int enable)
 {
     benchmarkEnabled = enable;
 }
 
-void EnableLightmaps(jboolean enable)
+void EnableLightmaps(int enable)
 {
     lightmapsEnabled = enable;
 }
 
-void ShowFramerate(jboolean enable)
+void ShowFramerate(int enable)
 {
     showFramerateEnabled = enable;
 }
@@ -440,9 +434,7 @@ void InitGame(int width, int height)
         argc++;
     }
 
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "initGame(%d, %d)", width, height);
-#endif
+    LOGD("initGame(%d, %d)", width, height);
 
     setAudioCallbacks(&GetPos, &WriteAudio, &InitAudio);
     setResolution(width, height);
@@ -453,54 +445,39 @@ void InitGame(int width, int height)
 
 void DrawFrame()
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "nextFrame()");
-#endif
+    LOGD("nextFrame()");
     if(drawFrame) drawFrame();
 }
 
-void QueueKeyEvent(jint key, jint state)
+void QueueKeyEvent(int key, int state)
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "queueKeyEvent(%d, %d)", key, state);
-#endif
+    LOGD("queueKeyEvent(%d, %d)", key, state);
     if(queueKeyEvent) queueKeyEvent(key, state);
 }
 
-void QueueMotionEvent(jint action, jfloat x, jfloat y, jfloat pressure)
+void QueueMotionEvent(int action, float x, float y, float pressure)
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "queueMotionEvent(%d, %f, %f, %f)", action, x, y, pressure);
-#endif
+    LOGD("queueMotionEvent(%d, %f, %f, %f)", action, x, y, pressure);
     if(queueMotionEvent) queueMotionEvent(action, x, y, pressure);
 }
 
-void QueueTrackballEvent(jint action, jfloat x, jfloat y)
+void QueueTrackballEvent(int action, float x, float y)
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "queueTrackballEvent(%d, %f, %f)", action, x, y);
-#endif
+    LOGD("queueTrackballEvent(%d, %f, %f)", action, x, y);
     if(queueTrackballEvent) queueTrackballEvent(action, x, y);
 }
 
-void QueueJoystickEvent(jint nAxis, jint nValue)
+void QueueJoystickEvent(int nAxis, int nValue)
 {
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "queueJoystickEvent(%d, %d)", nAxis, nValue);
-#endif
+    LOGD("queueJoystickEvent(%d, %d)", nAxis, nValue);
     if(queueJoystickEvent) queueJoystickEvent(nAxis, nValue);
 }
 
 void SetLibraryDirectory(const char* szPath)
 {
-    jboolean iscopy;
-    //const jbyte *path = (*env)->GetStringUTFChars(env, jpath, &iscopy);
     lib_dir = strdup(szPath);
-    //(*env)->ReleaseStringUTFChars(env, jpath, path);
 
-#ifdef DEBUG
-    __android_log_print(ANDROID_LOG_DEBUG, "Quake_JNI", "path=%s\n", lib_dir);
-#endif
+    LOGD("path=%s\n", lib_dir);
 }
 
 
