@@ -426,12 +426,12 @@ void CL_JoystickMove( usercmd_t *cmd ) {
 	}
 
 	if ( in_speed.active ) {
-		anglespeed = 0.001 * cls.frametime * cl_anglespeedkey->value;
+		anglespeed = 0.001 * cls.frametime * cl_anglespeedkey->value * 0.5;
 	} else {
-		anglespeed = 0.001 * cls.frametime;
+		anglespeed = 0.001 * cls.frametime * 0.5;
 	}
 
-	if ( !in_strafe.active ) {
+	/*if ( !in_strafe.active ) {
 		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * cl.joystickAxis[AXIS_SIDE];
 	} else {
 		cmd->rightmove = ClampChar( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
@@ -444,6 +444,11 @@ void CL_JoystickMove( usercmd_t *cmd ) {
 	}
 
 	cmd->upmove = ClampChar( cmd->upmove + cl.joystickAxis[AXIS_UP] );
+	*/
+	cl.viewangles[PITCH] += anglespeed * m_pitch->value * cl_pitchspeed->value * cl.joystickAxis[AXIS_PITCH];
+	cl.viewangles[YAW] += anglespeed * m_yaw->value * cl_yawspeed->value * cl.joystickAxis[AXIS_YAW];
+	cmd->rightmove = ClampChar( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
+	cmd->forwardmove = ClampChar( cmd->forwardmove + cl.joystickAxis[AXIS_FORWARD] );
 }
 
 /*

@@ -13,8 +13,8 @@
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "Quake", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "Quake", __VA_ARGS__))
 
 #define QK_TAB				9
 #define QK_ENTER			13
@@ -234,6 +234,15 @@
 #define QK_EURO				338
 #define QK_UNDO				339
 #define QK_CONSOLE			340
+
+// Joystick helper functions
+extern void InitJoysticks();
+extern void TermJoysticks();
+extern int JoystickOnTouchBegin(int nID, float fX, float fY);
+extern int JoystickOnTouchMove(int nID, float fX, float fY);
+extern int JoystickOnTouchEnd(int nID, float fX, float fY);
+extern int JoystickOnTouchCancel(int nID, float fX, float fY);
+extern int JoystickGetValue(int nJoystick, float *fX, float *fY);
 
 int simple_audio_init(void *buffer, int size, void (*idle)(void));
 void simple_audio_fini(void);
@@ -607,8 +616,8 @@ static void engine_draw_frame(struct engine* engine)
     }
 
     // Just fill the screen with a color.
-    //glClearColor(1,0,0,1);
-    //glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT);
 
 	DrawFrame();
 	
@@ -647,10 +656,10 @@ static int androidKeyCodeToQuake(AInputEvent* event)
 	{
 		case AKEYCODE_FOCUS:
 			return QK_F1;
-		case AKEYCODE_VOLUME_DOWN:
-			return QK_F2;
-		case AKEYCODE_VOLUME_UP:
-			return QK_F3;
+		//case AKEYCODE_VOLUME_DOWN:
+			//return QK_F2;
+		//case AKEYCODE_VOLUME_UP:
+		//	return QK_F3;
 		case AKEYCODE_DPAD_UP:
 			return QK_UPARROW;
 		case AKEYCODE_DPAD_DOWN:
@@ -670,6 +679,12 @@ static int androidKeyCodeToQuake(AInputEvent* event)
 			return QK_CONSOLE;
 		case AKEYCODE_BACK:
 			return QK_ESCAPE;
+		case AKEYCODE_MENU:
+			return QK_ESCAPE;
+		case AKEYCODE_BUTTON_X:
+			return QK_KP_SLASH;
+		case AKEYCODE_BUTTON_Y:
+			return QK_TAB;
 		case AKEYCODE_DEL:
 			return QK_BACKSPACE;
 		case AKEYCODE_ALT_LEFT:
@@ -701,27 +716,76 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 			int nQuakeKey = androidKeyCodeToQuake(event);
 			if (nQuakeKey != 0)
 				QueueKeyEvent(nQuakeKey, nValue);
+			else
+				return 0;
 		}
 		return 1;
 		
 		case AINPUT_EVENT_TYPE_MOTION:
 		{
-			int32_t nSourceId = (AInputEvent_getSource)(event);
+			int32_t nPointerCount 	= AMotionEvent_getPointerCount(event);
+			int32_t nSourceId 		= AInputEvent_getSource(event);
+			int32_t nActionRaw 		= AMotionEvent_getAction(event);
+			int32_t nAction 		= AMOTION_EVENT_ACTION_MASK & nActionRaw;
+
 			if (nSourceId == AINPUT_SOURCE_TOUCHPAD)
 			{
+				int32_t n;
+				float fX,fY;
+				for (n=0; n<nPointerCount; n++)
+				{
+					int32_t nPointerIndex	= n;
+					int32_t nPointerId;
+					if (nAction == AMOTION_EVENT_ACTION_POINTER_DOWN || nAction == AMOTION_EVENT_ACTION_POINTER_UP)
+					{
+						nPointerIndex	= (nActionRaw & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+						if(nPointerIndex >= nPointerCount)
+							continue;
+					}
+					nPointerId		= AMotionEvent_getPointerId(event, nPointerIndex);
+					fX = AMotionEvent_getX(event, nPointerIndex);
+					fY = AMotionEvent_getY(event, nPointerIndex);
+			
+					if ( nAction == AMOTION_EVENT_ACTION_DOWN || nAction == AMOTION_EVENT_ACTION_POINTER_DOWN )
+					{
+						JoystickOnTouchBegin(nPointerId, fX, fY);
+						//LOGI("TouchBegin %d %.1f %.1f\n", nPointerId, fX, fY);
+					}
+					else if ( nAction == AMOTION_EVENT_ACTION_UP || nAction == AMOTION_EVENT_ACTION_POINTER_UP)
+					{
+						JoystickOnTouchEnd(nPointerId, fX, fY);
+						//LOGI("TouchEnd %d %.1f %.1f\n", nPointerId, fX, fY);
+					}
+					else if ( nAction == AMOTION_EVENT_ACTION_CANCEL )
+					{
+						JoystickOnTouchCancel(nPointerId, fX, fY);
+						//LOGI("TouchCancel %d %.1f %.1f\n", nPointerId, fX, fY);
+					}
+					else if ( nAction == AMOTION_EVENT_ACTION_MOVE )
+					{
+						JoystickOnTouchMove(nPointerId, fX, fY);
+						//LOGI("TouchMove %d %.1f %.1f\n", nPointerId, fX, fY);
+					}
+				}
+				
+				//if (nAction == AMOTION_EVENT_ACTION_DOWN)
+				//	JoystickOnTouchBegin();
+				
+				/*
 				//QueueJoystickEvent(0, AMotionEvent_getX(event,0));
 				float fX = AMotionEvent_getX(event, 0);
 				float fY = AMotionEvent_getY(event, 0);
 				fX = fX/966.0f*854.0f;
 				fY = 480.0f-fY/360.0f*480.0f;
-				QueueMotionEvent((AKeyEvent_getAction)(event), fX, fY, 1);
+				QueueMotionEvent(AKeyEvent_getAction(event), fX, fY, 1);
+				*/
 			}
 			else
 			{
 				//engine->animating = 1;
 				//engine->state.x = AMotionEvent_getX(event, 0);
 				//engine->state.y = AMotionEvent_getY(event, 0);
-				QueueMotionEvent((AKeyEvent_getAction)(event), AMotionEvent_getX(event, 0), AMotionEvent_getY(event, 0), 1);
+				QueueMotionEvent(AKeyEvent_getAction(event), AMotionEvent_getX(event, 0), AMotionEvent_getY(event, 0), 1);
 			}
 		}
         return 1;
@@ -760,6 +824,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
         case APP_CMD_TERM_WINDOW:
             // The window is being hidden or closed, clean it up.
             engine_term_display(engine);
+			TermJoysticks();
 			exit(0);
             break;
         case APP_CMD_GAINED_FOCUS:
@@ -803,6 +868,7 @@ void android_main(struct android_app* state)
 
 	// Load library
 	OnLoad();
+	InitJoysticks();
 	
     memset(&engine, 0, sizeof(engine));
     state->userData = &engine;
@@ -865,19 +931,23 @@ void android_main(struct android_app* state)
             if (state->destroyRequested != 0) 
 			{
                 engine_term_display(&engine);
+				TermJoysticks();
                 return;
             }
         }
 
         if (engine.animating) 
 		{
-            // Done with events; draw next animation frame.
-            /*engine.state.angle += .01f;
-            if (engine.state.angle > 1) 
-			{
-                engine.state.angle = 0;
-            }*/
-
+			// Send joystick values to Quake
+			float fLX,fLY,fRX,fRY;
+			JoystickGetValue(0,&fLX,&fLY);
+			JoystickGetValue(1,&fRX,&fRY);
+			QueueJoystickEvent(0, (int)(fLX*127.0f));	// AXIS_SIDE
+			QueueJoystickEvent(1, -(int)(fLY*127.0f));	// AXIS_FORWARD
+			QueueJoystickEvent(4, -(int)(fRX*127.0f));	// AXIS_YAW
+			QueueJoystickEvent(5, (int)(fRY*63.0f));	// AXIS_PITCH
+			//LOGI("Joystick %.1f %.1f %.1f %.1f\n", fLX, fLY, fRX, fRY);
+			
             // Drawing is throttled to the screen update rate, so there
             // is no need to do timing here.
             engine_draw_frame(&engine);
